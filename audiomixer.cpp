@@ -98,7 +98,9 @@ float AudioPlayer::get_gain(void) {
 
 void AudioPlayer::set_repeat(bool b) {
   repeat = b;
-  decoder->set_auto_rewind(repeat);
+  if(is_stream_valid()) {
+    decoder->set_auto_rewind(repeat);
+  }
 }
 
 void AudioPlayer::set_mute(bool b) {

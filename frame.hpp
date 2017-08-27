@@ -6,6 +6,7 @@
 #include <wx/sizer.h>
 #include <wx/gbsizer.h>
 #include <wx/tglbtn.h>
+#include <wx/fileconf.h>
 
 #include "audiomixer.hpp"
 
@@ -29,17 +30,32 @@ class SoundboardVUMeter: public wxPanel {
   wxDECLARE_EVENT_TABLE();
 };
 
+class SoundboardMainPanel;
+
 class SoundboardPlayerPanel: public wxPanel {
   public:
 
     static const int WIDTH = 200;
     static const int HEIGHT = 200;
-    SoundboardPlayerPanel(wxWindow *parent);
+    SoundboardPlayerPanel(SoundboardMainPanel *parent, int x, int y);
     ~SoundboardPlayerPanel();
 
     std::shared_ptr<AudioPlayer> get_player(void);
 
   private:
+    int xpos,ypos;
+
+    std::string configuration_own_keyify(std::string key);
+
+    void configuration_set_int(std::string key, int);
+    int configuration_get_int(std::string key, int vdefault);
+
+    void configuration_set_float(std::string key, float);
+    float configuration_get_float(std::string key, float vdefault);
+
+    void configuration_set_string(std::string key, std::string);
+    std::string configuration_get_string(std::string key, std::string vdefault);
+
     void on_button_play(wxCommandEvent& event);
     void on_button_loop(wxCommandEvent& event);
     void on_button_mute(wxCommandEvent& event);
@@ -51,7 +67,7 @@ class SoundboardPlayerPanel: public wxPanel {
 
     void on_destroy(wxWindowDestroyEvent& event);
 
-    std::shared_ptr<AudioMixer> mixer;
+    SoundboardMainPanel *main_panel;
     AudioPlayerID pid;
 
 		SoundboardVUMeter *vumeter;
@@ -76,10 +92,23 @@ class SoundboardMainPanel: public wxPanel {
  
     std::shared_ptr<AudioMixer> mixer;
 
+    void configuration_set_int(std::string key, int);
+    int configuration_get_int(std::string key, int vdefault);
+
+    void configuration_set_float(std::string key, float);
+    float configuration_get_float(std::string key, float vdefault);
+
+    void configuration_set_string(std::string key, std::string);
+    std::string configuration_get_string(std::string key, std::string vdefault);
+
   private:
 
     wxGridBagSizer *gs;
-    
+ 
+    std::unique_ptr<wxFileConfig> config;
+
+    bool load_configuration_from_file(void);
+
     void create_new_player_panel_at_position(int i, int j);
 
     void remove_player_panel_at_position(int i, int j);

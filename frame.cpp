@@ -7,6 +7,8 @@
 #include <iostream>
 #include <cmath>
 #include <wx/filedlg.h>
+#include <wx/stdpaths.h>
+#include <wx/filename.h>
 
 #include "frame.hpp"
 
@@ -56,9 +58,12 @@ wxEND_EVENT_TABLE()
 SoundboardMainPanel::SoundboardMainPanel(wxWindow *parent)
   :wxPanel(parent) {
 
+  // load configuration from disk
+  load_configuration_from_file();
+
   // create audio mixer
   mixer = std::make_shared<AudioMixer>();
- 
+
   // debug
   //SetBackgroundColour(*wxRED);
 
@@ -68,6 +73,80 @@ SoundboardMainPanel::SoundboardMainPanel(wxWindow *parent)
   Fit();
   
   Centre();
+}
+
+bool SoundboardMainPanel::load_configuration_from_file() {
+  auto local = wxStandardPaths::Get().GetUserLocalDataDir();
+
+  // check if directory exist, if not create it
+  if(!wxDirExists(local)) {
+    if(!wxFileName::Mkdir(local,wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL))
+      return false;
+  }
+  
+  auto filename = wxFileName(local, "main", "conf").GetFullPath();
+  std::cerr<<"CONFIG="<<filename<<"\n";
+
+  config = std::make_unique<wxFileConfig>(wxT(""), wxT(""), filename);
+
+  return true;
+}
+
+void SoundboardMainPanel::configuration_set_int(std::string key, int v) {
+  if(!config)
+    return;
+
+  config->Write(key,v);
+  config->Flush();
+}
+  
+int SoundboardMainPanel::configuration_get_int(std::string key, int vdefault ) {
+  if(!config)
+    return vdefault;
+
+  int rv;
+  if(config->Read(key, &rv))
+    return rv;
+  else
+    return vdefault;
+}
+
+void SoundboardMainPanel::configuration_set_float(std::string key, float v) {
+  if(!config)
+    return;
+
+  config->Write(key,v);
+  config->Flush();
+}
+
+float SoundboardMainPanel::configuration_get_float(std::string key, float vdefault) {
+  if(!config)
+    return vdefault;
+
+  float rv;
+  if(config->Read(key, &rv))
+    return rv;
+  else
+    return vdefault;
+}
+
+void SoundboardMainPanel::configuration_set_string(std::string key, std::string v) {
+  if(!config)
+    return;
+
+  config->Write(key, wxString(v));
+  config->Flush();
+}
+
+std::string SoundboardMainPanel::configuration_get_string(std::string key, std::string vdefault) {
+  if(!config)
+    return vdefault;
+
+  wxString rv;
+  if(config->Read(key, &rv))
+    return rv.ToStdString();
+  else
+    return vdefault;
 }
 
 void SoundboardMainPanel::on_size(wxSizeEvent& event) {
@@ -124,7 +203,7 @@ void SoundboardMainPanel::create_new_player_panel_at_position(int i, int j) {
   auto p = gs->FindItemAtPosition(wxGBPosition(i,j));
   // if not create it
   if(!p) {
-    gs->Add(new SoundboardPlayerPanel(this),
+    gs->Add(new SoundboardPlayerPanel(this,i,j),
       wxGBPosition(i,j),
       wxDefaultSpan,
       wxEXPAND);
@@ -162,16 +241,17 @@ wxBEGIN_EVENT_TABLE(SoundboardPlayerPanel, wxPanel)
 wxEND_EVENT_TABLE()
 
 
-SoundboardPlayerPanel::SoundboardPlayerPanel(wxWindow *parent)
-  :wxPanel(parent) {
+SoundboardPlayerPanel::SoundboardPlayerPanel(SoundboardMainPanel *parent,
+  int x, int y)
+  :wxPanel(parent),
+  xpos(x), ypos(y) {
 
   std::cerr<<"in with the new\n";
 
   // assign mixer shared ptr
-  auto panel = dynamic_cast<SoundboardMainPanel*>(parent);
-  mixer = panel->mixer;
+  main_panel = parent;
   // create a new player
-  pid = mixer->new_player();
+  pid = main_panel->mixer->new_player();
 
   // force min/max size 
   auto sz = wxSize(SoundboardPlayerPanel::WIDTH, SoundboardPlayerPanel::HEIGHT);
@@ -189,20 +269,34 @@ SoundboardPlayerPanel::SoundboardPlayerPanel(wxWindow *parent)
   vumeter = new SoundboardVUMeter(this);
   vbox->Add(vumeter, 1, wxEXPAND|wxALL, 5);
 
-  slider_volume = new wxSlider(this, PLAYER_SLIDER_VOLUME, 100, 0, 125);
+  float gain = configuration_get_float("gain", 1.0);
+  int vol = 100*gain;
+  slider_volume = new wxSlider(this, PLAYER_SLIDER_VOLUME, vol, 0, 125);
+  get_player()->set_gain(gain);
   vbox->Add(slider_volume, 1, wxEXPAND);
 
   auto hbox = new wxBoxSizer(wxHORIZONTAL);
   vbox->Add(hbox, 2, wxEXPAND);
-
+  
   loop_button = new wxToggleButton(this, PLAYER_BUTTON_LOOP, wxT("L"));
+  bool loop = configuration_get_int("loop", false);
+  loop_button->SetValue(loop);
+  get_player()->set_repeat(loop);
+
   hbox->Add(loop_button, 1, wxEXPAND);
 
   mute_button = new wxToggleButton(this, PLAYER_BUTTON_MUTE, wxT("M"));
   hbox->Add(mute_button, 1, wxEXPAND);
+  bool b = configuration_get_int("mute", false);
+  mute_button->SetValue(b);
+  get_player()->set_mute(loop);
 
   open_button = new wxButton(this, PLAYER_BUTTON_OPEN, wxT("O"));
   hbox->Add(open_button, 1, wxEXPAND);
+  auto path = configuration_get_string("path", "");
+  if(!path.empty()) {
+    get_player()->open(path);
+  }
 
   timer = new wxTimer(this, PLAYER_TIMER);
   timer->Start(100);
@@ -212,11 +306,11 @@ SoundboardPlayerPanel::~SoundboardPlayerPanel() {
   // stop timer events
   timer->Stop();
   // remove player from mixer
-  mixer->remove_player(pid);
+  main_panel->mixer->remove_player(pid);
 }
 
 std::shared_ptr<AudioPlayer> SoundboardPlayerPanel::get_player() {
-  return mixer->get_player(pid);
+  return main_panel->mixer->get_player(pid);
 }
 
 void SoundboardPlayerPanel::on_button_play(wxCommandEvent& event) {
@@ -234,12 +328,16 @@ void SoundboardPlayerPanel::on_button_play(wxCommandEvent& event) {
 
 void SoundboardPlayerPanel::on_button_loop(wxCommandEvent& event) {
   auto p = get_player();
-  p->set_repeat(event.IsChecked());
+  bool b = event.IsChecked();
+  p->set_repeat(b);
+  configuration_set_int("loop",b);
 }
 
 void SoundboardPlayerPanel::on_button_mute(wxCommandEvent& event) {
   auto p = get_player();
-  p->set_mute(event.IsChecked());
+  bool b = event.IsChecked();
+  p->set_mute(b);
+  configuration_set_int("mute",b);
 }
 
 void SoundboardPlayerPanel::on_button_open(wxCommandEvent& event) {
@@ -248,7 +346,9 @@ void SoundboardPlayerPanel::on_button_open(wxCommandEvent& event) {
   if(dialog.ShowModal() == wxID_CANCEL)
     return;
 
-  get_player()->open(dialog.GetPath().ToStdString());
+  auto path = dialog.GetPath().ToStdString();
+  get_player()->open(path);
+  configuration_set_string("path",path);
 }
 
 void SoundboardPlayerPanel::on_timer(wxTimerEvent& event) {
@@ -264,6 +364,35 @@ void SoundboardPlayerPanel::on_timer(wxTimerEvent& event) {
 void SoundboardPlayerPanel::on_slider(wxCommandEvent& event) {
   float gain = (slider_volume->GetValue()/100.0f);
   get_player()->set_gain(gain);
+  configuration_set_float("gain",gain);
+}
+
+std::string SoundboardPlayerPanel::configuration_own_keyify(std::string key) {
+  return "player#"+std::to_string(xpos) + "#" + std::to_string(ypos) + "#" + key;
+}
+
+void SoundboardPlayerPanel::configuration_set_int(std::string key, int v) {
+  main_panel->configuration_set_int(configuration_own_keyify(key), v);
+}
+  
+int SoundboardPlayerPanel::configuration_get_int(std::string key, int vdefault ) {
+  return main_panel->configuration_get_int(configuration_own_keyify(key), vdefault);
+}
+
+void SoundboardPlayerPanel::configuration_set_float(std::string key, float v) {
+  main_panel->configuration_set_float(configuration_own_keyify(key), v);
+}
+
+float SoundboardPlayerPanel::configuration_get_float(std::string key, float vdefault) {
+  return main_panel->configuration_get_float(configuration_own_keyify(key), vdefault);
+}
+
+void SoundboardPlayerPanel::configuration_set_string(std::string key, std::string v) {
+  main_panel->configuration_set_string(configuration_own_keyify(key), v);
+}
+
+std::string SoundboardPlayerPanel::configuration_get_string(std::string key, std::string vdefault) {
+  return main_panel->configuration_get_string(configuration_own_keyify(key), vdefault);
 }
 
 wxBEGIN_EVENT_TABLE(SoundboardVUMeter, wxPanel)
