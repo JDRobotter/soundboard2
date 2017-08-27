@@ -21,9 +21,11 @@ bool AudioPlayer::close(void) {
   if(is_stream_valid()) {
     auto err = Pa_CloseStream(stream);
     if(err != paNoError) {
-      std::cerr<<"ErrorX"<<Pa_GetErrorText(err)<<"\n";
+      std::cerr<<"ErrorA"<<Pa_GetErrorText(err)<<"\n";
       return false;
     }
+    // invalidate
+    filename = std::string();
     return true;
   }
 
@@ -38,7 +40,7 @@ bool AudioPlayer::play(void) {
   if(is_stream_valid()) {
     auto err = Pa_StartStream(stream);
     if(err != paNoError) {
-      std::cerr<<"Error"<<Pa_GetErrorText(err)<<"\n";
+      std::cerr<<"ErrorB"<<Pa_GetErrorText(err)<<"\n";
       return false;
     }
     return true;
@@ -62,7 +64,7 @@ bool AudioPlayer::stop(void) {
   if(is_stream_valid()) {
     auto err = Pa_StopStream(stream);
     if(err != paNoError) {
-      std::cerr<<"Error"<<Pa_GetErrorText(err)<<"\n";
+      std::cerr<<"ErrorC"<<Pa_GetErrorText(err)<<"\n";
       return false;
     }
     set_level(0.0);
@@ -75,14 +77,6 @@ bool AudioPlayer::stop(void) {
 bool AudioPlayer::reset(void) {
   // stop stream
   stop();
-
-  if(is_stream_valid()) {
-    auto err = Pa_CloseStream(stream);
-    if(err != paNoError) {
-      std::cerr<<"Error"<<Pa_GetErrorText(err)<<"\n";
-      return false;
-    }
-  }
 
   // kill decoder and build a new one
   open(filename);
@@ -161,13 +155,15 @@ bool AudioPlayer::open(std::string _filename) {
     NULL, /*inputParameters*/
     &output_parameters,
     p.samplerate_hz,
-    2048,//paFramesPerBufferUnspecified,
+    paFramesPerBufferUnspecified,
     0, /*flags*/
     AudioPlayer::portaudio_feed_callback,
     (void*)this);
 
-  if(err != paNoError)
-    std::cerr<<"Error"<<Pa_GetErrorText(err)<<"\n";
+  if(err != paNoError) {
+    std::cerr<<"ErrorE"<<Pa_GetErrorText(err)<<"\n";
+    return false;
+  }
 
   return true;
 }
@@ -182,6 +178,7 @@ int AudioPlayer::portaudio_feed_callback(
   
   AudioPlayer *player = (AudioPlayer*)data;
 
+  std::cerr<<"FEED\n";
   // get frame from decoder (will potentially block)
   auto frames = player->decoder->pop_frames(frames_per_buffer);
   if(frames.size() == 0) {
@@ -220,7 +217,7 @@ int AudioPlayer::portaudio_feed_callback(
 }
 
 bool AudioPlayer::is_stream_valid(void) {
-  return filename != "";
+  return !filename.empty();
 }
 
 void AudioPlayer::set_level(float v) {
@@ -238,13 +235,13 @@ AudioMixer::AudioMixer() {
 
   auto err = Pa_Initialize();
   if(err != paNoError)
-    std::cerr<<"Error"<<Pa_GetErrorText(err)<<"\n";
+    std::cerr<<"ErrorF"<<Pa_GetErrorText(err)<<"\n";
 
 
   // iterate over devices
   int ndevices = Pa_GetDeviceCount();
   if(ndevices < 0)
-    std::cerr<<"Error"<<Pa_GetErrorText(ndevices)<<"\n";
+    std::cerr<<"ErrorG"<<Pa_GetErrorText(ndevices)<<"\n";
   for(PaDeviceIndex i=0;i<ndevices;i++) {
     auto devinfo = Pa_GetDeviceInfo(i);
     
@@ -263,7 +260,7 @@ AudioMixer::~AudioMixer() {
 
   auto err = Pa_Terminate();
   if(err != paNoError)
-    std::cerr<<"Error"<<Pa_GetErrorText(err)<<"\n";
+    std::cerr<<"ErrorH"<<Pa_GetErrorText(err)<<"\n";
 }
 
 std::vector<std::pair<PaDeviceIndex,std::string>> AudioMixer::get_devices() {

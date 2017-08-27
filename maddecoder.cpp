@@ -7,9 +7,10 @@
 
 enum mad_flow MADDecoder::output_mad_callback(void *data,
   struct mad_header const *header, struct mad_pcm *pcm) {
-
   // access object
   MADDecoder *mad = (MADDecoder*)data;
+
+  std::cerr<<"MAD OUTPUT\n";
 
   {
     std::unique_lock<std::mutex> mlock(mad->parameters_mutex);
@@ -208,15 +209,24 @@ std::vector<audio_frame_t> MADDecoder::pop_frames(unsigned int n) {
 
   {
     std::unique_lock<std::mutex> mlock(frames_mutex);
+    bool poped=false;
     while(n--) {
+
       while(frames.empty()) {
         if(eof)
           return out;
+        // notify frames consumed
+        if(poped) {
+          frames_consumed_cv.notify_all();
+          poped = false;
+        }
         // not enough frames in queue, sleep on it
         frames_available_cv.wait(mlock);
       }
+
       out.push_back(frames.front());
       frames.pop();
+      poped = true;
     }
     // some frames consumed
     frames_consumed_cv.notify_all();

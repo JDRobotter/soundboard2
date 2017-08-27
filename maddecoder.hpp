@@ -69,7 +69,7 @@ class MADDecoder: public Decoder {
     std::unique_ptr<std::thread> decoder_thread;
 
     // maximum number of stored frames
-    const unsigned max_frames = 10*1024;
+    const unsigned max_frames = 1024*1024;
     // internal decoded frames queue
     std::queue<audio_frame_t> frames;
     // associated mutex
