@@ -18,20 +18,20 @@ wxEND_EVENT_TABLE()
 SoundboardFrame::SoundboardFrame(const wxString& title, const wxPoint& pos, const wxSize& size)
   :wxFrame(NULL, wxID_ANY, title, pos, size) {
   
+  mixer = std::make_shared<AudioMixer>();
+
   // setup menubar
   auto menu = new wxMenu;
 
   // build output device menu
   auto menu_device = new wxMenu;
 
-  wxString devices[] = {
-    "main audio",
-    "secondary audio",
-    "default",
-    "fup one",
-  };
-  for(auto device : devices) {
-    menu_device->Append(1,device);
+  for(auto device : mixer->get_devices()) {
+    PaDeviceIndex idx = device.first;
+    std::string& name = device.second;
+    
+    menu_device->Append(idx,wxString(name));
+    Bind(wxEVT_COMMAND_MENU_SELECTED, &SoundboardFrame::on_menu, this, idx);
   }
 
   menu->AppendSubMenu(menu_device, "&Output device", "Select output device");
@@ -45,24 +45,48 @@ SoundboardFrame::SoundboardFrame(const wxString& title, const wxPoint& pos, cons
   SetMenuBar(menubar);
 
   // setup rest of layout
-
   panel = new SoundboardMainPanel(this);
 
+  auto devname = panel->configuration_get_string("device",std::string());
+  if(!devname.empty()) {
+    auto idx = mixer->get_device_by_name(devname);
+    std::cerr<<"devbyname "<<devname<<" "<<idx<<"\n";
+    if(idx <= paNoDevice)
+      mixer->set_default_device();
+    else
+      mixer->set_device(idx);
+  }
+  else {
+    mixer->set_default_device();
+  }
+
+
   Centre();
+}
+
+void SoundboardFrame::on_menu(wxCommandEvent& event) {
+  // get selected device index
+  PaDeviceIndex idx  = event.GetId();
+  mixer->set_device(idx);
+  panel->configuration_set_string("device",mixer->get_device_name(idx));
+}
+
+std::shared_ptr<AudioMixer> SoundboardFrame::get_mixer() {
+  return mixer;
 }
 
 wxBEGIN_EVENT_TABLE(SoundboardMainPanel, wxPanel)
   EVT_SIZE(SoundboardMainPanel::on_size)
 wxEND_EVENT_TABLE()
 
-SoundboardMainPanel::SoundboardMainPanel(wxWindow *parent)
+SoundboardMainPanel::SoundboardMainPanel(SoundboardFrame *parent)
   :wxPanel(parent) {
 
   // load configuration from disk
   load_configuration_from_file();
 
   // create audio mixer
-  mixer = std::make_shared<AudioMixer>();
+  mixer = parent->get_mixer();
 
   // debug
   //SetBackgroundColour(*wxRED);
@@ -85,7 +109,6 @@ bool SoundboardMainPanel::load_configuration_from_file() {
   }
   
   auto filename = wxFileName(local, "main", "conf").GetFullPath();
-  std::cerr<<"CONFIG="<<filename<<"\n";
 
   config = std::make_unique<wxFileConfig>(wxT(""), wxT(""), filename);
 
@@ -160,7 +183,6 @@ void SoundboardMainPanel::on_size(wxSizeEvent& event) {
 
   auto nw = floor(w/pw);
   auto nh = floor(h/ph);
-  std::cerr<<"new grid sz= "<<nw<<","<<nh<<"\n";
 
   if(nw == 0 || nh == 0)
     return;   
@@ -207,7 +229,6 @@ void SoundboardMainPanel::create_new_player_panel_at_position(int i, int j) {
       wxGBPosition(i,j),
       wxDefaultSpan,
       wxEXPAND);
-    std::cerr<<"adding\n";
   }
 }
 
@@ -245,8 +266,6 @@ SoundboardPlayerPanel::SoundboardPlayerPanel(SoundboardMainPanel *parent,
   int x, int y)
   :wxPanel(parent),
   xpos(x), ypos(y) {
-
-  std::cerr<<"in with the new\n";
 
   // assign mixer shared ptr
   main_panel = parent;
@@ -287,9 +306,9 @@ SoundboardPlayerPanel::SoundboardPlayerPanel(SoundboardMainPanel *parent,
 
   mute_button = new wxToggleButton(this, PLAYER_BUTTON_MUTE, wxT("M"));
   hbox->Add(mute_button, 1, wxEXPAND);
-  bool b = configuration_get_int("mute", false);
-  mute_button->SetValue(b);
-  get_player()->set_mute(loop);
+  bool mute = configuration_get_int("mute", false);
+  mute_button->SetValue(mute);
+  get_player()->set_mute(mute);
 
   open_button = new wxButton(this, PLAYER_BUTTON_OPEN, wxT("O"));
   hbox->Add(open_button, 1, wxEXPAND);

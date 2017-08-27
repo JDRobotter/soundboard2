@@ -84,11 +84,13 @@ class SoundboardPlayerPanel: public wxPanel {
     wxDECLARE_EVENT_TABLE();
 };
 
+class SoundboardFrame;
+
 class SoundboardMainPanel: public wxPanel {
 
   public:
 
-    SoundboardMainPanel(wxWindow *parent);    
+    SoundboardMainPanel(SoundboardFrame *parent);    
  
     std::shared_ptr<AudioMixer> mixer;
 
@@ -123,7 +125,13 @@ class SoundboardFrame: public wxFrame {
   public:
     SoundboardFrame(const wxString& title, const wxPoint& pos, const wxSize& size);
 
+    std::shared_ptr<AudioMixer> get_mixer();
+
   private:
+
+    void on_menu(wxCommandEvent& event);
+
+    std::shared_ptr<AudioMixer> mixer;
  
     wxMenuBar *menubar;
     SoundboardMainPanel *panel;

@@ -4,8 +4,10 @@
 #include <thread>
 #include <cmath>
 
-AudioPlayer::AudioPlayer() {
+AudioPlayer::AudioPlayer(AudioMixer *mixer)
+  :mixer(mixer) {
   gain = 1.0;
+  level = 0.0;
   repeat = false;
   mute = false;
 }
@@ -63,6 +65,7 @@ bool AudioPlayer::stop(void) {
       std::cerr<<"Error"<<Pa_GetErrorText(err)<<"\n";
       return false;
     }
+    set_level(0.0);
     return true;
   }
 
@@ -142,14 +145,24 @@ bool AudioPlayer::open(std::string _filename) {
  
   // get decoded audio parameters
   auto p = decoder->get_parameters();
-  std::cerr<<"decoder: "<<p.samplerate_hz<<","<<p.channels<<"\n";
+  // set up PA parameters
+  PaDeviceIndex idx = mixer->get_device();
+  std::cerr<<"open stream "<<idx<<"\n";
+  PaStreamParameters output_parameters = {
+    .device = idx,
+    .channelCount = 2,
+    .sampleFormat = paFloat32,
+    .suggestedLatency = 1.0,
+    .hostApiSpecificStreamInfo = NULL,
+  };
   // start PA stream
-  auto err = Pa_OpenDefaultStream(
+  auto err = Pa_OpenStream(
     &stream,
-    0, 2,
-    paFloat32,
+    NULL, /*inputParameters*/
+    &output_parameters,
     p.samplerate_hz,
     2048,//paFramesPerBufferUnspecified,
+    0, /*flags*/
     AudioPlayer::portaudio_feed_callback,
     (void*)this);
 
@@ -226,6 +239,24 @@ AudioMixer::AudioMixer() {
   auto err = Pa_Initialize();
   if(err != paNoError)
     std::cerr<<"Error"<<Pa_GetErrorText(err)<<"\n";
+
+
+  // iterate over devices
+  int ndevices = Pa_GetDeviceCount();
+  if(ndevices < 0)
+    std::cerr<<"Error"<<Pa_GetErrorText(ndevices)<<"\n";
+  for(PaDeviceIndex i=0;i<ndevices;i++) {
+    auto devinfo = Pa_GetDeviceInfo(i);
+    
+    // device must be at least stereo to work
+    if(devinfo->maxOutputChannels < 2)
+      continue;
+    
+    std::string name = std::string(devinfo->name);
+    devices.push_back({i,name});
+  }
+
+  set_default_device();
 }
 
 AudioMixer::~AudioMixer() {
@@ -235,9 +266,13 @@ AudioMixer::~AudioMixer() {
     std::cerr<<"Error"<<Pa_GetErrorText(err)<<"\n";
 }
 
+std::vector<std::pair<PaDeviceIndex,std::string>> AudioMixer::get_devices() {
+  return devices;
+}
+
 AudioPlayerID AudioMixer::new_player() {
   next_audio_player_id++;
-  players[next_audio_player_id] = std::make_shared<AudioPlayer>();
+  players[next_audio_player_id] = std::make_shared<AudioPlayer>(this);
   return next_audio_player_id;
 }
 
@@ -248,4 +283,40 @@ std::shared_ptr<AudioPlayer> AudioMixer::get_player(AudioPlayerID uid) {
 void AudioMixer::remove_player(AudioPlayerID id) {
   get_player(id)->close();
   players.erase(id);
+}
+
+std::string AudioMixer::get_device_name(PaDeviceIndex idx) {
+  for(auto const& device: devices) {
+    if(device.first == idx)
+      return device.second;
+  }
+  return std::string();
+}
+
+PaDeviceIndex AudioMixer::get_device_by_name(std::string name) {
+  for(auto const& device: devices) {
+    if(device.second == name) {
+      return device.first;
+    }
+  }
+  return paNoDevice;
+}
+
+PaDeviceIndex AudioMixer::get_device(void) {
+  std::cerr<<"get_device"<<current_device<<"\n";
+  return current_device;
+}
+
+void AudioMixer::set_device(PaDeviceIndex idx) {
+  current_device = idx;
+  std::cerr<<"set_device"<<idx<<"\n";
+  // iterate over all players to stop them
+  for(auto const&  item: players) {
+    auto const& player = item.second;
+    player->stop();
+  }
+}
+
+void AudioMixer::set_default_device() {
+  set_device(Pa_GetDefaultOutputDevice());
 }

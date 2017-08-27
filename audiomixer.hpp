@@ -9,9 +9,11 @@
 #include "maddecoder.hpp"
 #include "wavdecoder.hpp"
 
+class AudioMixer;
+
 class AudioPlayer {
   public:
-    AudioPlayer();
+    AudioPlayer(AudioMixer *mixer);
     ~AudioPlayer();
 
     bool open(std::string filename);
@@ -46,7 +48,8 @@ class AudioPlayer {
     float get_level(void);
 
 	private:
-	
+	  AudioMixer* mixer;
+
     // return true if stream as been created, false otherwise
     bool is_stream_valid(void);
 
@@ -80,9 +83,27 @@ class AudioMixer {
     
     void remove_player(AudioPlayerID);
 
+    std::vector<std::pair<PaDeviceIndex,std::string>> get_devices();
+
+    std::string get_device_name(PaDeviceIndex idx);
+
+    PaDeviceIndex get_device_by_name(std::string name);
+
+    void set_device(PaDeviceIndex idx);
+    void set_default_device(void);
+
+    PaDeviceIndex get_device(void);
+
   private:
+
+    // currently selected device
+    std::atomic<PaDeviceIndex> current_device;
+
     // map of audio players
     AudioPlayerMap players;
+
+    // list of available devices 
+    std::vector<std::pair<PaDeviceIndex,std::string>> devices;
 
     // next audio player ID
     AudioPlayerID next_audio_player_id;
