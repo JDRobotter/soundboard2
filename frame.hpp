@@ -49,6 +49,8 @@ class SoundboardPlayerPanel: public wxPanel {
 
 		void on_slider(wxCommandEvent& event);
 
+    void on_destroy(wxWindowDestroyEvent& event);
+
     std::shared_ptr<AudioMixer> mixer;
     AudioPlayerID pid;
 

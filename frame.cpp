@@ -209,10 +209,10 @@ SoundboardPlayerPanel::SoundboardPlayerPanel(wxWindow *parent)
 }
 
 SoundboardPlayerPanel::~SoundboardPlayerPanel() {
-
+  // stop timer events
+  timer->Stop();
+  // remove player from mixer
   mixer->remove_player(pid);
-
-  std::cerr<<"out with the old\n";
 }
 
 std::shared_ptr<AudioPlayer> SoundboardPlayerPanel::get_player() {
