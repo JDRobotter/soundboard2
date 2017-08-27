@@ -45,7 +45,7 @@ SoundboardFrame::SoundboardFrame(const wxString& title, const wxPoint& pos, cons
   SetMenuBar(menubar);
 
   // setup rest of layout
-  panel = new SoundboardMainPanel(this);
+  panel = new SoundboardMainPanel(this, title.ToStdString());
 
   auto devname = panel->configuration_get_string("device",std::string());
   if(!devname.empty()) {
@@ -79,11 +79,11 @@ wxBEGIN_EVENT_TABLE(SoundboardMainPanel, wxPanel)
   EVT_SIZE(SoundboardMainPanel::on_size)
 wxEND_EVENT_TABLE()
 
-SoundboardMainPanel::SoundboardMainPanel(SoundboardFrame *parent)
+SoundboardMainPanel::SoundboardMainPanel(SoundboardFrame *parent, std::string app_name)
   :wxPanel(parent) {
 
   // load configuration from disk
-  load_configuration_from_file();
+  load_configuration_from_file(app_name);
 
   // create audio mixer
   mixer = parent->get_mixer();
@@ -99,8 +99,11 @@ SoundboardMainPanel::SoundboardMainPanel(SoundboardFrame *parent)
   Centre();
 }
 
-bool SoundboardMainPanel::load_configuration_from_file() {
+bool SoundboardMainPanel::load_configuration_from_file(std::string app_name) {
   auto local = wxStandardPaths::Get().GetUserLocalDataDir();
+
+  std::hash<std::string> hash_fn;
+  size_t hash = hash_fn(app_name);
 
   // check if directory exist, if not create it
   if(!wxDirExists(local)) {
@@ -108,7 +111,7 @@ bool SoundboardMainPanel::load_configuration_from_file() {
       return false;
   }
   
-  auto filename = wxFileName(local, "main", "conf").GetFullPath();
+  auto filename = wxFileName(local, std::to_string(hash), "conf").GetFullPath();
 
   config = std::make_unique<wxFileConfig>(wxT(""), wxT(""), filename);
 

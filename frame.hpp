@@ -90,7 +90,7 @@ class SoundboardMainPanel: public wxPanel {
 
   public:
 
-    SoundboardMainPanel(SoundboardFrame *parent);    
+    SoundboardMainPanel(SoundboardFrame *parent, std::string app_name);
  
     std::shared_ptr<AudioMixer> mixer;
 
@@ -109,7 +109,7 @@ class SoundboardMainPanel: public wxPanel {
  
     std::unique_ptr<wxFileConfig> config;
 
-    bool load_configuration_from_file(void);
+    bool load_configuration_from_file(std::string app_name);
 
     void create_new_player_panel_at_position(int i, int j);
 

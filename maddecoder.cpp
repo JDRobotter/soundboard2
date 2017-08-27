@@ -9,9 +9,6 @@ enum mad_flow MADDecoder::output_mad_callback(void *data,
   struct mad_header const *header, struct mad_pcm *pcm) {
   // access object
   MADDecoder *mad = (MADDecoder*)data;
-
-  std::cerr<<"MAD OUTPUT\n";
-
   {
     std::unique_lock<std::mutex> mlock(mad->parameters_mutex);
     auto& p = mad->get_parameters();
