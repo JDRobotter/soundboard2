@@ -19,10 +19,13 @@ wxIMPLEMENT_APP(SoundboardApp);
 
 bool SoundboardApp::OnInit() {
 
+
+#ifndef CONSOLE
 	AllocConsole();
 	freopen("CONOUT$", "w", stdout);
 	freopen("CONOUT$", "w", stderr);
-	
+#endif
+
 	auto frame = new SoundboardFrame("Sounboard", wxPoint(50, 50), wxSize(450, 450));
 	frame->Show(true);
 

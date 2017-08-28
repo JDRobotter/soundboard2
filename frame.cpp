@@ -13,10 +13,12 @@
 #include "frame.hpp"
 
 wxBEGIN_EVENT_TABLE(SoundboardFrame, wxFrame)
+  EVT_SIZE(SoundboardFrame::on_size)
 wxEND_EVENT_TABLE()
 
 SoundboardFrame::SoundboardFrame(const wxString& title, const wxPoint& pos, const wxSize& size)
-  :wxFrame(NULL, wxID_ANY, title, pos, size) {
+  :wxFrame(NULL, wxID_ANY, title, pos, size),
+  panel(NULL) {
   
   mixer = std::make_shared<AudioMixer>();
 
@@ -47,6 +49,7 @@ SoundboardFrame::SoundboardFrame(const wxString& title, const wxPoint& pos, cons
   // setup rest of layout
   panel = new SoundboardMainPanel(this, title.ToStdString());
 
+  // load device
   auto devname = panel->configuration_get_string("device",std::string());
   if(!devname.empty()) {
     auto idx = mixer->get_device_by_name(devname);
@@ -60,8 +63,26 @@ SoundboardFrame::SoundboardFrame(const wxString& title, const wxPoint& pos, cons
     mixer->set_default_device();
   }
 
+  // set size frame size
+
+  auto w = panel->configuration_get_int("window_width", 210);
+  auto h = panel->configuration_get_int("window_height", 210);
+  SetSize(wxSize(w,h));
 
   Centre();
+}
+
+void SoundboardFrame::on_size(wxSizeEvent& event) {
+
+  // continue event progression
+  event.Skip();
+
+  auto sz = GetSize();
+  auto w = sz.GetWidth(), h = sz.GetHeight();
+  if(panel) {
+    panel->configuration_set_int("window_width", w);
+    panel->configuration_set_int("window_height", h);
+  }
 }
 
 void SoundboardFrame::on_menu(wxCommandEvent& event) {
@@ -91,9 +112,14 @@ SoundboardMainPanel::SoundboardMainPanel(SoundboardFrame *parent, std::string ap
   // debug
   //SetBackgroundColour(*wxRED);
 
-  gs = new wxGridBagSizer(0,0);
+  auto vbox = new wxBoxSizer(wxVERTICAL);
+  auto hbox = new wxBoxSizer(wxHORIZONTAL);
+  gs = new wxGridBagSizer(10,10);
+  vbox->Add(hbox,1,wxALIGN_CENTER_HORIZONTAL);
+  hbox->Add(gs, 0, wxALIGN_CENTER_VERTICAL);
+  
 
-  SetSizer(gs);
+  SetSizer(vbox);
   Fit();
   
   Centre();
@@ -182,7 +208,8 @@ void SoundboardMainPanel::on_size(wxSizeEvent& event) {
   //SetSizeHints(wxSize(50,50), wxSize(50,50), wxSize(50,50));
   auto sz = GetSize();
   auto w = sz.GetWidth(), h = sz.GetHeight();
-  auto pw = SoundboardPlayerPanel::WIDTH, ph = SoundboardPlayerPanel::HEIGHT;
+  auto pw = SoundboardPlayerPanel::WIDTH + gs->GetVGap(),
+      ph = SoundboardPlayerPanel::HEIGHT + gs->GetHGap();
 
   auto nw = floor(w/pw);
   auto nh = floor(h/ph);
@@ -220,6 +247,9 @@ void SoundboardMainPanel::on_size(wxSizeEvent& event) {
     create_new_player_panel_at_position(i,j);
   }
 
+  // compute fitted width x height, and store it
+  auto fit_width = nw*pw;
+  auto fit_height = nh*ph;
 }
 
 void SoundboardMainPanel::create_new_player_panel_at_position(int i, int j) {
@@ -287,7 +317,8 @@ SoundboardPlayerPanel::SoundboardPlayerPanel(SoundboardMainPanel *parent,
   auto vbox = new wxBoxSizer(wxVERTICAL);
   SetSizer(vbox);
 
-  play_button = new wxToggleButton(this, PLAYER_BUTTON_PLAY, wxT("PLAY"));
+  play_button = new wxToggleButton(this, PLAYER_BUTTON_PLAY, wxT("-"));
+
   vbox->Add(play_button, 6, wxEXPAND);
 
   vumeter = new SoundboardVUMeter(this);
@@ -302,7 +333,9 @@ SoundboardPlayerPanel::SoundboardPlayerPanel(SoundboardMainPanel *parent,
   auto hbox = new wxBoxSizer(wxHORIZONTAL);
   vbox->Add(hbox, 2, wxEXPAND);
   
-  loop_button = new wxToggleButton(this, PLAYER_BUTTON_LOOP, wxT("L"));
+  loop_button = new wxToggleButton(this, PLAYER_BUTTON_LOOP, wxT(""));
+  loop_button->SetLabelMarkup("<b>L</b>");
+  loop_button->SetForegroundColour(wxColour(66,119,244,255));
   bool loop = configuration_get_int("loop", false);
   loop_button->SetValue(loop);
   get_player()->set_repeat(loop);
@@ -310,6 +343,8 @@ SoundboardPlayerPanel::SoundboardPlayerPanel(SoundboardMainPanel *parent,
   hbox->Add(loop_button, 1, wxEXPAND);
 
   mute_button = new wxToggleButton(this, PLAYER_BUTTON_MUTE, wxT("M"));
+  mute_button->SetLabelMarkup("<b>M</b>");
+  mute_button->SetForegroundColour(wxColour(244,80,66,255));
   hbox->Add(mute_button, 1, wxEXPAND);
   bool mute = configuration_get_int("mute", false);
   mute_button->SetValue(mute);
@@ -319,7 +354,7 @@ SoundboardPlayerPanel::SoundboardPlayerPanel(SoundboardMainPanel *parent,
   hbox->Add(open_button, 1, wxEXPAND);
   auto path = configuration_get_string("path", "");
   if(!path.empty()) {
-    get_player()->open(path);
+    open_file_in_player(path);
   }
 
   timer = new wxTimer(this, PLAYER_TIMER);
@@ -331,6 +366,11 @@ SoundboardPlayerPanel::~SoundboardPlayerPanel() {
   timer->Stop();
   // remove player from mixer
   mixer->remove_player(pid);
+}
+
+void SoundboardPlayerPanel::open_file_in_player(std::string filename) {
+  get_player()->open(filename);
+  play_button->SetLabelMarkup(wxFileName(filename).GetName());
 }
 
 std::shared_ptr<AudioPlayer> SoundboardPlayerPanel::get_player() {
@@ -371,7 +411,7 @@ void SoundboardPlayerPanel::on_button_open(wxCommandEvent& event) {
     return;
 
   auto path = dialog.GetPath().ToStdString();
-  get_player()->open(path);
+  open_file_in_player(path);
   configuration_set_string("path",path);
 }
 

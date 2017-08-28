@@ -48,6 +48,8 @@ class SoundboardPlayerPanel: public wxPanel {
 		
     int xpos,ypos;
 
+    void open_file_in_player(std::string filename);
+
     std::string configuration_own_keyify(std::string key);
 
     void configuration_set_int(std::string key, int);
@@ -133,6 +135,8 @@ class SoundboardFrame: public wxFrame {
   private:
 
     void on_menu(wxCommandEvent& event);
+
+    void on_size(wxSizeEvent& event);
 
     std::shared_ptr<AudioMixer> mixer;
  

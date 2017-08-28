@@ -133,6 +133,7 @@ bool AudioPlayer::open(std::string _filename) {
 
   // open audio file
   if(!decoder->open(filename)) {
+    filename = std::string();
     return false;
   }
   // start decoding
@@ -201,7 +202,9 @@ int AudioPlayer::portaudio_feed_callback(
   // measure L/R max signal enveloppe
   float lmax=0.0,rmax=0.0;
 
+  int i = 0;
   for(auto frame: frames) {
+    i++;
     float l = gain*frame.left;
     float r = gain*frame.right;
 

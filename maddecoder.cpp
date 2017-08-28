@@ -185,7 +185,8 @@ void MADDecoder::set_auto_rewind(bool b) {
 }
 
 void MADDecoder::join() {
-  decoder_thread->join();
+  if(decoder_thread)
+    decoder_thread->join();
 }
 
 void MADDecoder::wait_for_space_available(void) {

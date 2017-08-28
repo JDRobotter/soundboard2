@@ -47,6 +47,8 @@ class AudioPlayer {
     void set_level(float);
     float get_level(void);
 
+    std::string get_filename(void) { return filename;};
+
 	private:
 	  AudioMixer* mixer;
 
