@@ -76,7 +76,7 @@ enum mad_flow MADDecoder::input_mad_callback(void *data, struct mad_stream *stre
     memmove(mad->buffer, stream->next_frame, rem);
   }
   
-  size_t rsize = 0;
+  std::streamsize rsize = 0;
   while(1) {
     // read data from file, copy to buffer starting after remaining data
     {
@@ -110,8 +110,8 @@ enum mad_flow MADDecoder::input_mad_callback(void *data, struct mad_stream *stre
 }
 
 float MADDecoder::mad_sample_to_float(mad_fixed_t sample) {
-  const double factor = 1.0/(1<<MAD_F_FRACBITS);
-  return std::min(1.0, std::max(-1.0, sample*factor));
+  const float factor = 1.0f/(1<<MAD_F_FRACBITS);
+  return std::min(1.0f, std::max(-1.0f, sample*factor));
 }
 
 // member functions
@@ -218,6 +218,7 @@ std::vector<audio_frame_t> MADDecoder::pop_frames(unsigned int n) {
           poped = false;
         }
         // not enough frames in queue, sleep on it
+		std::cerr << "sleeping for frames !\n";
         frames_available_cv.wait(mlock);
       }
 

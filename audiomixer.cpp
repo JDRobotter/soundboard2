@@ -4,6 +4,7 @@
 #include <thread>
 #include <cmath>
 
+
 AudioPlayer::AudioPlayer(AudioMixer *mixer)
   :mixer(mixer) {
   gain = 1.0;
@@ -142,18 +143,17 @@ bool AudioPlayer::open(std::string _filename) {
   // set up PA parameters
   PaDeviceIndex idx = mixer->get_device();
   std::cerr<<"open stream "<<idx<<"\n";
-  PaStreamParameters output_parameters = {
-    .device = idx,
-    .channelCount = 2,
-    .sampleFormat = paFloat32,
-    .suggestedLatency = 1.0,
-    .hostApiSpecificStreamInfo = NULL,
-  };
+  PaStreamParameters op;
+  op.device = idx;
+  op.channelCount = 2;
+  op.sampleFormat = paFloat32;
+  op.suggestedLatency = 0.1;
+  op.hostApiSpecificStreamInfo = NULL;
   // start PA stream
   auto err = Pa_OpenStream(
     &stream,
     NULL, /*inputParameters*/
-    &output_parameters,
+    &op,
     p.samplerate_hz,
     paFramesPerBufferUnspecified,
     0, /*flags*/
@@ -175,12 +175,17 @@ int AudioPlayer::portaudio_feed_callback(
 			const PaStreamCallbackTimeInfo *time_info,
 			PaStreamCallbackFlags status_flags,
 			void *data) {
-  
+  (void)status_flags;
+  (void)time_info;
+  (void)input_buffer;
+
   AudioPlayer *player = (AudioPlayer*)data;
 
-  std::cerr<<"FEED\n";
+
+  //std::cerr << "FEED " << frames_per_buffer << "\n";
   // get frame from decoder (will potentially block)
   auto frames = player->decoder->pop_frames(frames_per_buffer);
+  //std::cerr << "> " << frames.size() << "\n";
   if(frames.size() == 0) {
     // we reached end of file
     return paComplete;

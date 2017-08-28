@@ -272,8 +272,10 @@ SoundboardPlayerPanel::SoundboardPlayerPanel(SoundboardMainPanel *parent,
 
   // assign mixer shared ptr
   main_panel = parent;
+  // keep a ref to audio mixer
+  mixer = main_panel->mixer;
   // create a new player
-  pid = main_panel->mixer->new_player();
+  pid = mixer->new_player();
 
   // force min/max size 
   auto sz = wxSize(SoundboardPlayerPanel::WIDTH, SoundboardPlayerPanel::HEIGHT);
@@ -328,11 +330,11 @@ SoundboardPlayerPanel::~SoundboardPlayerPanel() {
   // stop timer events
   timer->Stop();
   // remove player from mixer
-  main_panel->mixer->remove_player(pid);
+  mixer->remove_player(pid);
 }
 
 std::shared_ptr<AudioPlayer> SoundboardPlayerPanel::get_player() {
-  return main_panel->mixer->get_player(pid);
+  return mixer->get_player(pid);
 }
 
 void SoundboardPlayerPanel::on_button_play(wxCommandEvent& event) {

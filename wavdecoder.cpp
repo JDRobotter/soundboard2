@@ -65,13 +65,13 @@ void WAVDecoder::set_auto_rewind(bool b) {
 std::vector<audio_frame_t> WAVDecoder::pop_frames(unsigned int nframes) {
 
   const int nchannels = sfinfo.channels;
-  const int rsamples = nframes * nchannels;
-  float buffer[rsamples];
+  int rsamples = nframes * nchannels;
+  auto buffer = std::make_unique<float[]>(rsamples);
 
   std::vector<audio_frame_t> out;
   sf_count_t rsz = 0;
   while(1) {
-    rsz = sf_readf_float(sffile, buffer, nframes);
+    rsz = sf_readf_float(sffile, buffer.get(), nframes);
     if(rsz > 0) {
       break;
     }

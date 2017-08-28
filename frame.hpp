@@ -43,6 +43,9 @@ class SoundboardPlayerPanel: public wxPanel {
     std::shared_ptr<AudioPlayer> get_player(void);
 
   private:
+
+    std::shared_ptr<AudioMixer> mixer;
+		
     int xpos,ypos;
 
     std::string configuration_own_keyify(std::string key);
