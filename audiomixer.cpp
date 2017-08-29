@@ -246,22 +246,31 @@ AudioMixer::AudioMixer() {
     std::cerr<<"ErrorF"<<Pa_GetErrorText(err)<<"\n";
 
 
+  std::map<PaHostApiIndex,std::string> api_names;
+  // iterate over host APIs
+  auto napis = Pa_GetHostApiCount();
+  for(PaHostApiIndex i=0; i<napis; i++) {
+    auto apiinfo = Pa_GetHostApiInfo(i);
+    api_names[i] = std::string(apiinfo->name);
+  }
+
   // iterate over devices
-  int ndevices = Pa_GetDeviceCount();
+  auto ndevices = Pa_GetDeviceCount();
   if(ndevices < 0)
     std::cerr<<"ErrorG"<<Pa_GetErrorText(ndevices)<<"\n";
-  for(PaDeviceIndex i=0;i<ndevices;i++) {
+  for(PaDeviceIndex i=0; i<ndevices; i++) {
     auto devinfo = Pa_GetDeviceInfo(i);
     
     // device must be at least stereo to work
     if(devinfo->maxOutputChannels < 2)
       continue;
     
-    std::string name = std::string(devinfo->name);
+    auto api_name = api_names[devinfo->hostApi];
+    auto name = api_name + ":" + std::string(devinfo->name);
     devices.push_back({i,name});
   }
 
-  set_default_device();
+  set_device(get_default_device());
 }
 
 AudioMixer::~AudioMixer() {
@@ -322,6 +331,6 @@ void AudioMixer::set_device(PaDeviceIndex idx) {
   }
 }
 
-void AudioMixer::set_default_device() {
-  set_device(Pa_GetDefaultOutputDevice());
+PaDeviceIndex AudioMixer::get_default_device() {
+  return Pa_GetDefaultOutputDevice();
 }

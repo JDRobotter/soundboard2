@@ -134,9 +134,14 @@ class SoundboardFrame: public wxFrame {
 
   private:
 
+    wxMenu *menu;
+    wxMenu *menu_device;
+
     void on_menu(wxCommandEvent& event);
 
     void on_size(wxSizeEvent& event);
+
+    void set_mixer_device(PaDeviceIndex);
 
     std::shared_ptr<AudioMixer> mixer;
  

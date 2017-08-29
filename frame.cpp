@@ -23,16 +23,16 @@ SoundboardFrame::SoundboardFrame(const wxString& title, const wxPoint& pos, cons
   mixer = std::make_shared<AudioMixer>();
 
   // setup menubar
-  auto menu = new wxMenu;
+  menu = new wxMenu;
 
   // build output device menu
-  auto menu_device = new wxMenu;
+  menu_device = new wxMenu;
 
   for(auto device : mixer->get_devices()) {
     PaDeviceIndex idx = device.first;
     std::string& name = device.second;
     
-    menu_device->Append(idx,wxString(name));
+    menu_device->AppendRadioItem(idx,wxString(name));
     Bind(wxEVT_COMMAND_MENU_SELECTED, &SoundboardFrame::on_menu, this, idx);
   }
 
@@ -50,18 +50,14 @@ SoundboardFrame::SoundboardFrame(const wxString& title, const wxPoint& pos, cons
   panel = new SoundboardMainPanel(this, title.ToStdString());
 
   // load device
+  auto idx = mixer->get_default_device();
   auto devname = panel->configuration_get_string("device",std::string());
   if(!devname.empty()) {
-    auto idx = mixer->get_device_by_name(devname);
-    std::cerr<<"devbyname "<<devname<<" "<<idx<<"\n";
-    if(idx <= paNoDevice)
-      mixer->set_default_device();
-    else
-      mixer->set_device(idx);
+    auto _idx = mixer->get_device_by_name(devname);
+    if(_idx > paNoDevice)
+      idx = _idx;
   }
-  else {
-    mixer->set_default_device();
-  }
+  set_mixer_device(idx);
 
   // set size frame size
   // NDJD: ugly magic numbers... believe me I tried...
@@ -93,8 +89,14 @@ void SoundboardFrame::on_size(wxSizeEvent& event) {
 void SoundboardFrame::on_menu(wxCommandEvent& event) {
   // get selected device index
   PaDeviceIndex idx  = event.GetId();
-  mixer->set_device(idx);
+  set_mixer_device(idx);
   panel->configuration_set_string("device",mixer->get_device_name(idx));
+}
+
+void SoundboardFrame::set_mixer_device(PaDeviceIndex idx) {
+  mixer->set_device(idx);
+  // set menu items checks
+  menu_device->Check(idx,true);
 }
 
 std::shared_ptr<AudioMixer> SoundboardFrame::get_mixer() {
@@ -113,9 +115,6 @@ SoundboardMainPanel::SoundboardMainPanel(SoundboardFrame *parent, std::string ap
 
   // create audio mixer
   mixer = parent->get_mixer();
-
-  // debug
-  //SetBackgroundColour(*wxRED);
 
   auto vbox = new wxBoxSizer(wxVERTICAL);
   auto hbox = new wxBoxSizer(wxHORIZONTAL);
@@ -333,7 +332,7 @@ SoundboardPlayerPanel::SoundboardPlayerPanel(SoundboardMainPanel *parent,
   auto hbox = new wxBoxSizer(wxHORIZONTAL);
   vbox->Add(hbox, 2, wxEXPAND);
   
-  loop_button = new wxToggleButton(this, PLAYER_BUTTON_LOOP, wxT(""));
+  loop_button = new wxToggleButton(this, PLAYER_BUTTON_LOOP, wxT("L"));
   loop_button->SetLabelMarkup("<b>L</b>");
   loop_button->SetForegroundColour(wxColour(66,119,244,255));
   bool loop = configuration_get_int("loop", false);

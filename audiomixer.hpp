@@ -92,7 +92,7 @@ class AudioMixer {
     PaDeviceIndex get_device_by_name(std::string name);
 
     void set_device(PaDeviceIndex idx);
-    void set_default_device(void);
+    PaDeviceIndex get_default_device(void);
 
     PaDeviceIndex get_device(void);
 
