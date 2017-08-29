@@ -20,7 +20,7 @@ wxIMPLEMENT_APP(SoundboardApp);
 bool SoundboardApp::OnInit() {
 
 
-#ifndef CONSOLE
+#ifdef CONSOLE
 	AllocConsole();
 	freopen("CONOUT$", "w", stdout);
 	freopen("CONOUT$", "w", stderr);
