@@ -250,10 +250,6 @@ void SoundboardMainPanel::on_size(wxSizeEvent& event) {
   for(int i=ch;i<nh;i++) {
     create_new_player_panel_at_position(i,j);
   }
-
-  // compute fitted width x height, and store it
-  auto fit_width = nw*pw;
-  auto fit_height = nh*ph;
 }
 
 void SoundboardMainPanel::create_new_player_panel_at_position(int i, int j) {
