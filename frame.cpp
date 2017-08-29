@@ -64,10 +64,11 @@ SoundboardFrame::SoundboardFrame(const wxString& title, const wxPoint& pos, cons
   }
 
   // set size frame size
-
-  auto w = panel->configuration_get_int("window_width", 210);
-  auto h = panel->configuration_get_int("window_height", 210);
-  SetSize(wxSize(w,h));
+  // NDJD: ugly magic numbers... believe me I tried...
+  SetSizeHints(
+    wxSize(220,260),
+    wxDefaultSize,
+    wxSize(210,210));
 
   Centre();
 }
