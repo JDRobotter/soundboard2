@@ -70,6 +70,10 @@ SoundboardFrame::SoundboardFrame(const wxString& title, const wxPoint& pos, cons
     wxDefaultSize,
     wxSize(210,210));
 
+  auto w = panel->configuration_get_int("window_width", 220);
+  auto h = panel->configuration_get_int("window_height", 260);
+  SetSize(w,h);
+
   Centre();
 }
 
@@ -118,7 +122,6 @@ SoundboardMainPanel::SoundboardMainPanel(SoundboardFrame *parent, std::string ap
   gs = new wxGridBagSizer(10,10);
   vbox->Add(hbox,1,wxALIGN_CENTER_HORIZONTAL);
   hbox->Add(gs, 0, wxALIGN_CENTER_VERTICAL);
-  
 
   SetSizer(vbox);
   Fit();
