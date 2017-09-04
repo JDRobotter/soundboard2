@@ -153,6 +153,8 @@ class SoundboardFrame: public wxFrame {
     void on_button_new_row(wxCommandEvent& event);
     void on_button_remove_row(wxCommandEvent& event);
 
+    void set_sizer_and_fit(void);
+
     std::shared_ptr<AudioMixer> mixer;
  
     wxMenuBar *menubar;

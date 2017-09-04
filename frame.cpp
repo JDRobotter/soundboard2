@@ -81,7 +81,7 @@ SoundboardFrame::SoundboardFrame(const wxString& title, const wxPoint& pos, cons
   hbox->Add(new wxButton(this, FRAME_BUTTON_REMOVE_ROW, "-", wxDefaultPosition, wxSize(25,-1)),
     1, wxEXPAND);
 
-  SetSizerAndFit(ugs);
+  set_sizer_and_fit();
 
   // load device
   auto idx = mixer->get_default_device();
@@ -94,6 +94,13 @@ SoundboardFrame::SoundboardFrame(const wxString& title, const wxPoint& pos, cons
   set_mixer_device(idx);
 
 }
+void SoundboardFrame::set_sizer_and_fit() {
+  SetMinSize(wxDefaultSize);
+  SetMaxSize(wxDefaultSize);
+  SetSizerAndFit(ugs);
+  SetMinSize(GetSize());
+  SetMaxSize(GetSize());
+}
 
 void SoundboardFrame::on_size(wxSizeEvent& event) {
   // continue event progression
@@ -102,22 +109,22 @@ void SoundboardFrame::on_size(wxSizeEvent& event) {
 
 void SoundboardFrame::on_button_remove_column(wxCommandEvent& event) {
   panel->increment_player_grid_size(0,-1);
-  SetSizerAndFit(ugs);
+  set_sizer_and_fit();
 }
 
 void SoundboardFrame::on_button_remove_row(wxCommandEvent& event) {
   panel->increment_player_grid_size(-1,0);
-  SetSizerAndFit(ugs);
+  set_sizer_and_fit();
 }
 
 void SoundboardFrame::on_button_new_column(wxCommandEvent& event) {
   panel->increment_player_grid_size(0,+1);
-  SetSizerAndFit(ugs);
+  set_sizer_and_fit();
 }
 
 void SoundboardFrame::on_button_new_row(wxCommandEvent& event) {
   panel->increment_player_grid_size(+1,0);
-  SetSizerAndFit(ugs);
+  set_sizer_and_fit();
 }
 
 void SoundboardFrame::on_menu(wxCommandEvent& event) {
