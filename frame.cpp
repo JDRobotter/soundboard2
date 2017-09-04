@@ -12,8 +12,19 @@
 
 #include "frame.hpp"
 
+enum {
+  FRAME_BUTTON_NEW_COLUMN = 0,
+  FRAME_BUTTON_NEW_ROW,
+  FRAME_BUTTON_REMOVE_COLUMN,
+  FRAME_BUTTON_REMOVE_ROW,
+};
+
 wxBEGIN_EVENT_TABLE(SoundboardFrame, wxFrame)
   EVT_SIZE(SoundboardFrame::on_size)
+  EVT_BUTTON(FRAME_BUTTON_NEW_COLUMN, SoundboardFrame::on_button_new_column)
+  EVT_BUTTON(FRAME_BUTTON_NEW_ROW, SoundboardFrame::on_button_new_row)
+  EVT_BUTTON(FRAME_BUTTON_REMOVE_COLUMN, SoundboardFrame::on_button_remove_column)
+  EVT_BUTTON(FRAME_BUTTON_REMOVE_ROW, SoundboardFrame::on_button_remove_row)
 wxEND_EVENT_TABLE()
 
 SoundboardFrame::SoundboardFrame(const wxString& title, const wxPoint& pos, const wxSize& size)
@@ -23,10 +34,10 @@ SoundboardFrame::SoundboardFrame(const wxString& title, const wxPoint& pos, cons
   mixer = std::make_shared<AudioMixer>();
 
   // setup menubar
-  menu = new wxMenu;
+  menu = new wxMenu();
 
   // build output device menu
-  menu_device = new wxMenu;
+  menu_device = new wxMenu();
 
   for(auto device : mixer->get_devices()) {
     PaDeviceIndex idx = device.first;
@@ -41,13 +52,36 @@ SoundboardFrame::SoundboardFrame(const wxString& title, const wxPoint& pos, cons
   menu->AppendSeparator();
   menu->Append(wxID_EXIT);
 
-  menubar = new wxMenuBar;
+  menubar = new wxMenuBar();
   menubar->Append(menu, "&File");
 
   SetMenuBar(menubar);
 
   // setup rest of layout
+  ugs = new wxGridBagSizer(0,0);
+  ugs->SetRows(2);
+  ugs->SetCols(2);
+
   panel = new SoundboardMainPanel(this, title.ToStdString());
+  ugs->Add(panel, wxGBPosition(0,0));
+
+  auto vbox = new wxBoxSizer(wxHORIZONTAL);
+  ugs->Add(vbox, wxGBPosition(1,0),wxDefaultSpan,wxEXPAND);
+
+  vbox->Add(new wxButton(this, FRAME_BUTTON_NEW_COLUMN, "+", wxDefaultPosition, wxSize(-1,25)),
+    1, wxEXPAND);
+  vbox->Add(new wxButton(this, FRAME_BUTTON_REMOVE_COLUMN, "-", wxDefaultPosition, wxSize(-1,25)),
+    1, wxEXPAND);
+
+  auto hbox = new wxBoxSizer(wxVERTICAL);
+  ugs->Add(hbox, wxGBPosition(0,1),wxDefaultSpan,wxEXPAND);
+
+  hbox->Add(new wxButton(this, FRAME_BUTTON_NEW_ROW, "+", wxDefaultPosition, wxSize(25,-1)),
+    1, wxEXPAND);
+  hbox->Add(new wxButton(this, FRAME_BUTTON_REMOVE_ROW, "-", wxDefaultPosition, wxSize(25,-1)),
+    1, wxEXPAND);
+
+  SetSizerAndFit(ugs);
 
   // load device
   auto idx = mixer->get_default_device();
@@ -59,31 +93,31 @@ SoundboardFrame::SoundboardFrame(const wxString& title, const wxPoint& pos, cons
   }
   set_mixer_device(idx);
 
-  // set size frame size
-  // NDJD: ugly magic numbers... believe me I tried...
-  SetSizeHints(
-    wxSize(220,260),
-    wxDefaultSize,
-    wxSize(210,210));
-
-  auto w = panel->configuration_get_int("window_width", 220);
-  auto h = panel->configuration_get_int("window_height", 260);
-  SetSize(w,h);
-
-  Centre();
 }
 
 void SoundboardFrame::on_size(wxSizeEvent& event) {
-
   // continue event progression
   event.Skip();
+}
 
-  auto sz = GetSize();
-  auto w = sz.GetWidth(), h = sz.GetHeight();
-  if(panel) {
-    panel->configuration_set_int("window_width", w);
-    panel->configuration_set_int("window_height", h);
-  }
+void SoundboardFrame::on_button_remove_column(wxCommandEvent& event) {
+  panel->increment_player_grid_size(0,-1);
+  SetSizerAndFit(ugs);
+}
+
+void SoundboardFrame::on_button_remove_row(wxCommandEvent& event) {
+  panel->increment_player_grid_size(-1,0);
+  SetSizerAndFit(ugs);
+}
+
+void SoundboardFrame::on_button_new_column(wxCommandEvent& event) {
+  panel->increment_player_grid_size(0,+1);
+  SetSizerAndFit(ugs);
+}
+
+void SoundboardFrame::on_button_new_row(wxCommandEvent& event) {
+  panel->increment_player_grid_size(+1,0);
+  SetSizerAndFit(ugs);
 }
 
 void SoundboardFrame::on_menu(wxCommandEvent& event) {
@@ -104,7 +138,6 @@ std::shared_ptr<AudioMixer> SoundboardFrame::get_mixer() {
 }
 
 wxBEGIN_EVENT_TABLE(SoundboardMainPanel, wxPanel)
-  EVT_SIZE(SoundboardMainPanel::on_size)
 wxEND_EVENT_TABLE()
 
 SoundboardMainPanel::SoundboardMainPanel(SoundboardFrame *parent, std::string app_name)
@@ -116,16 +149,12 @@ SoundboardMainPanel::SoundboardMainPanel(SoundboardFrame *parent, std::string ap
   // create audio mixer
   mixer = parent->get_mixer();
 
-  auto vbox = new wxBoxSizer(wxVERTICAL);
-  auto hbox = new wxBoxSizer(wxHORIZONTAL);
-  gs = new wxGridBagSizer(10,10);
-  vbox->Add(hbox,1,wxALIGN_CENTER_HORIZONTAL);
-  hbox->Add(gs, 0, wxALIGN_CENTER_VERTICAL);
+  gs = new wxGridBagSizer(0,0);
 
-  SetSizer(vbox);
-  Fit();
-  
-  Centre();
+  auto ncols = configuration_get_int("grid-ncols", 1);
+  auto nrows = configuration_get_int("grid-nrows", 1);
+  set_player_grid_size(ncols, nrows);
+  SetSizerAndFit(gs);
 }
 
 bool SoundboardMainPanel::load_configuration_from_file(std::string app_name) {
@@ -204,24 +233,24 @@ std::string SoundboardMainPanel::configuration_get_string(std::string key, std::
     return vdefault;
 }
 
-void SoundboardMainPanel::on_size(wxSizeEvent& event) {
-  // continue event propagation
-  event.Skip();
+void SoundboardMainPanel::increment_player_grid_size(int ncols, int nrows) {
+  auto cw = gs->GetCols(), ch = gs->GetRows();
+  set_player_grid_size(cw+ncols, ch+nrows);
+  SetSizerAndFit(gs);
+}
 
-  //SetSizeHints(wxSize(50,50), wxSize(50,50), wxSize(50,50));
-  auto sz = GetSize();
-  auto w = sz.GetWidth(), h = sz.GetHeight();
-  auto pw = SoundboardPlayerPanel::WIDTH + gs->GetVGap(),
-      ph = SoundboardPlayerPanel::HEIGHT + gs->GetHGap();
-
-  auto nw = floor(w/pw);
-  auto nh = floor(h/ph);
+void SoundboardMainPanel::set_player_grid_size(int ncols, int nrows) {
+  auto nw = ncols;
+  auto nh = nrows;
 
   if(nw == 0 || nh == 0)
     return;   
 
-  auto cw = gs->GetCols(), ch = gs->GetRows();
+  // save new size
+  configuration_set_int("grid-ncols", ncols);
+  configuration_set_int("grid-nrows", nrows);
 
+  auto cw = gs->GetCols(), ch = gs->GetRows();
   // remove players
   // iterating over all lines and old columns
   for(int i=0;i<nh;i++)
@@ -252,11 +281,11 @@ void SoundboardMainPanel::on_size(wxSizeEvent& event) {
 }
 
 void SoundboardMainPanel::create_new_player_panel_at_position(int i, int j) {
-
   // check if panel exist
   auto p = gs->FindItemAtPosition(wxGBPosition(i,j));
   // if not create it
   if(!p) {
+    std::cerr<<"new player"<<i<<","<<j<<"\n";
     gs->Add(new SoundboardPlayerPanel(this,i,j),
       wxGBPosition(i,j),
       wxDefaultSpan,
@@ -292,7 +321,6 @@ wxBEGIN_EVENT_TABLE(SoundboardPlayerPanel, wxPanel)
   EVT_TIMER(PLAYER_TIMER, SoundboardPlayerPanel::on_timer)
   EVT_SLIDER(PLAYER_SLIDER_VOLUME, SoundboardPlayerPanel::on_slider)
 wxEND_EVENT_TABLE()
-
 
 SoundboardPlayerPanel::SoundboardPlayerPanel(SoundboardMainPanel *parent,
   int x, int y)

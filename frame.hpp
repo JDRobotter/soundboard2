@@ -108,6 +108,8 @@ class SoundboardMainPanel: public wxPanel {
     void configuration_set_string(std::string key, std::string);
     std::string configuration_get_string(std::string key, std::string vdefault);
 
+    void increment_player_grid_size(int,int);
+
   private:
 
     wxGridBagSizer *gs;
@@ -120,7 +122,7 @@ class SoundboardMainPanel: public wxPanel {
 
     void remove_player_panel_at_position(int i, int j);
 
-    void on_size(wxSizeEvent&);
+    void set_player_grid_size(int,int);
 
     wxDECLARE_EVENT_TABLE();
 };
@@ -137,11 +139,19 @@ class SoundboardFrame: public wxFrame {
     wxMenu *menu;
     wxMenu *menu_device;
 
+    wxGridBagSizer *ugs;
+
     void on_menu(wxCommandEvent& event);
 
     void on_size(wxSizeEvent& event);
 
     void set_mixer_device(PaDeviceIndex);
+
+    void on_button_new_column(wxCommandEvent& event);
+    void on_button_remove_column(wxCommandEvent& event);
+
+    void on_button_new_row(wxCommandEvent& event);
+    void on_button_remove_row(wxCommandEvent& event);
 
     std::shared_ptr<AudioMixer> mixer;
  
