@@ -143,7 +143,6 @@ bool AudioPlayer::open(std::string _filename) {
   auto p = decoder->get_parameters();
   // set up PA parameters
   PaDeviceIndex idx = mixer->get_device();
-  std::cerr<<"open stream "<<idx<<"\n";
   PaStreamParameters op;
   op.device = idx;
   op.channelCount = 2;
@@ -183,10 +182,8 @@ int AudioPlayer::portaudio_feed_callback(
   AudioPlayer *player = (AudioPlayer*)data;
 
 
-  //std::cerr << "FEED " << frames_per_buffer << "\n";
   // get frame from decoder (will potentially block)
   auto frames = player->decoder->pop_frames(frames_per_buffer);
-  //std::cerr << "> " << frames.size() << "\n";
   if(frames.size() == 0) {
     // we reached end of file
     return paComplete;
@@ -317,13 +314,11 @@ PaDeviceIndex AudioMixer::get_device_by_name(std::string name) {
 }
 
 PaDeviceIndex AudioMixer::get_device(void) {
-  std::cerr<<"get_device"<<current_device<<"\n";
   return current_device;
 }
 
 void AudioMixer::set_device(PaDeviceIndex idx) {
   current_device = idx;
-  std::cerr<<"set_device"<<idx<<"\n";
   // iterate over all players to stop them
   for(auto const&  item: players) {
     auto const& player = item.second;

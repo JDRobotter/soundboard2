@@ -292,7 +292,6 @@ void SoundboardMainPanel::create_new_player_panel_at_position(int i, int j) {
   auto p = gs->FindItemAtPosition(wxGBPosition(i,j));
   // if not create it
   if(!p) {
-    std::cerr<<"new player"<<i<<","<<j<<"\n";
     gs->Add(new SoundboardPlayerPanel(this,i,j),
       wxGBPosition(i,j),
       wxDefaultSpan,
@@ -367,29 +366,32 @@ SoundboardPlayerPanel::SoundboardPlayerPanel(SoundboardMainPanel *parent,
   auto hbox = new wxBoxSizer(wxHORIZONTAL);
   vbox->Add(hbox, 2, wxEXPAND);
   
-  loop_button = new wxToggleButton(this, PLAYER_BUTTON_LOOP, wxT("L"));
+  loop_button = new wxToggleButton(this, PLAYER_BUTTON_LOOP, wxT("L"),
+                                    wxDefaultPosition, wxSize(10,-1));
   loop_button->SetLabelMarkup("<b>L</b>");
   loop_button->SetForegroundColour(wxColour(66,119,244,255));
   bool loop = configuration_get_int("loop", false);
   loop_button->SetValue(loop);
   get_player()->set_repeat(loop);
-
   hbox->Add(loop_button, 1, wxEXPAND);
 
-  mute_button = new wxToggleButton(this, PLAYER_BUTTON_MUTE, wxT("M"));
+  mute_button = new wxToggleButton(this, PLAYER_BUTTON_MUTE, wxT("M"),
+                                    wxDefaultPosition, wxSize(10,-1));
   mute_button->SetLabelMarkup("<b>M</b>");
   mute_button->SetForegroundColour(wxColour(244,80,66,255));
-  hbox->Add(mute_button, 1, wxEXPAND);
   bool mute = configuration_get_int("mute", false);
   mute_button->SetValue(mute);
   get_player()->set_mute(mute);
+  hbox->Add(mute_button, 1, wxEXPAND);
 
-  open_button = new wxButton(this, PLAYER_BUTTON_OPEN, wxT("O"));
-  hbox->Add(open_button, 1, wxEXPAND);
+  open_button = new wxButton(this, PLAYER_BUTTON_OPEN, wxT("O"),
+                                    wxDefaultPosition, wxSize(10,-1));
   auto path = configuration_get_string("path", "");
   if(!path.empty()) {
     open_file_in_player(path);
   }
+  hbox->Add(open_button, 1, wxEXPAND);
+
 
   timer = new wxTimer(this, PLAYER_TIMER);
   timer->Start(100);

@@ -15,10 +15,7 @@ public:
 
 wxIMPLEMENT_APP(SoundboardApp);
 
-
-
 bool SoundboardApp::OnInit() {
-
 
 #ifdef CONSOLE
 	AllocConsole();
