@@ -355,7 +355,7 @@ SoundboardPlayerPanel::SoundboardPlayerPanel(SoundboardMainPanel *parent,
   vbox->Add(play_button, 6, wxEXPAND);
 
   vumeter = new SoundboardVUMeter(this);
-  vbox->Add(vumeter, 1, wxEXPAND|wxALL, 5);
+  vbox->Add(vumeter, 1, wxEXPAND|wxALL, 2);
 
   float gain = configuration_get_float("gain", 1.0);
   int vol = 100*gain;
@@ -510,7 +510,11 @@ SoundboardVUMeter::~SoundboardVUMeter() {
 }
 
 void SoundboardVUMeter::set_level(float v) {
-  float new_level = std::max(0.0f, std::min(1.0f, v));
+
+  // plot sound level on a logarithm scale
+  v = std::max(0.0f, std::min(1.0f, v));
+  float new_level = 1.0 + 0.5*std::log10(v);
+
   bool as_changed = level != new_level;
   level = new_level;
   if(as_changed)

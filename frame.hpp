@@ -35,8 +35,8 @@ class SoundboardMainPanel;
 class SoundboardPlayerPanel: public wxPanel {
   public:
 
-    static const int WIDTH = 200;
-    static const int HEIGHT = 200;
+    static const int WIDTH = 150;
+    static const int HEIGHT = 150;
     SoundboardPlayerPanel(SoundboardMainPanel *parent, int x, int y);
     ~SoundboardPlayerPanel();
 
