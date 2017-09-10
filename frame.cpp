@@ -466,7 +466,20 @@ void SoundboardPlayerPanel::on_button_mute(wxCommandEvent& event) {
 void SoundboardPlayerPanel::on_button_open(wxCommandEvent& event) {
   wxFileDialog dialog(this, wxT("Open sample"), "", "",
     "mp3 files (*.mp3)|*.mp3|wav files (*.wav)|*.wav");
-  if(dialog.ShowModal() == wxID_CANCEL)
+
+  // recall last opened directory
+  auto previous = main_panel->configuration_get_string("last-directory", std::string());
+  if(!previous.empty()) {
+    dialog.SetDirectory(previous);
+  }
+
+  auto rv = dialog.ShowModal();
+
+  // store directory to configuration (even if cancel was pressed)
+  auto directory = dialog.GetDirectory().ToStdString();
+  main_panel->configuration_set_string("last-directory", directory);
+
+  if(rv == wxID_CANCEL)
     return;
 
   auto path = dialog.GetPath().ToStdString();
