@@ -51,7 +51,7 @@ enum mad_flow MADDecoder::output_mad_callback(void *data,
 enum mad_flow MADDecoder::error_mad_callback(void *data,
   struct mad_stream *stream, struct mad_frame *frame) {
 
-  std::cerr<<"ERROR "<<stream->error<<" "<<mad_stream_errorstr(stream)<<"\n";
+  //std::cerr<<"ERROR "<<stream->error<<" "<<mad_stream_errorstr(stream)<<"\n";
   return MAD_FLOW_CONTINUE;
 }
 
@@ -116,7 +116,8 @@ float MADDecoder::mad_sample_to_float(mad_fixed_t sample) {
 
 // member functions
 MADDecoder::MADDecoder():
-  buffer() {
+  ifile(),
+  filename("") {
   quit = false;
   eof = false;
 }
@@ -136,12 +137,13 @@ MADDecoder::~MADDecoder() {
   mad_decoder_finish(&decoder);
 }
 
-bool MADDecoder::open(std::string filename) {
+bool MADDecoder::open(std::string _filename) {
+  filename = _filename;
 
   {
     std::unique_lock<std::mutex> mlock(file_mutex);
 
-    ifile.open(filename, std::ifstream::binary);
+    ifile.open(_filename, std::ifstream::binary);
 
     if(!ifile) {
       return false;

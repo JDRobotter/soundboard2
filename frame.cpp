@@ -29,9 +29,8 @@ wxEND_EVENT_TABLE()
 
 SoundboardFrame::SoundboardFrame(const wxString& title, const wxPoint& pos, const wxSize& size)
   :wxFrame(NULL, wxID_ANY, title, pos, size),
+  mixer(std::make_shared<AudioMixer>()),
   panel(NULL) {
-  
-  mixer = std::make_shared<AudioMixer>();
 
   // setup menubar
   menu = new wxMenu();
@@ -219,7 +218,7 @@ int SoundboardMainPanel::configuration_get_int(std::string key, int vdefault ) {
   if(!config)
     return vdefault;
 
-  int rv;
+  int rv=0;
   if(config->Read(key, &rv))
     return rv;
   else
@@ -394,27 +393,27 @@ SoundboardPlayerPanel::SoundboardPlayerPanel(SoundboardMainPanel *parent,
                                     wxDefaultPosition, wxSize(10,-1));
   loop_button->SetLabelMarkup("<b>L</b>");
   loop_button->SetForegroundColour(wxColour(66,119,244,255));
+  hbox->Add(loop_button, 1, wxEXPAND);
   bool loop = configuration_get_int("loop", false);
   loop_button->SetValue(loop);
   get_player()->set_repeat(loop);
-  hbox->Add(loop_button, 1, wxEXPAND);
 
   mute_button = new wxToggleButton(this, PLAYER_BUTTON_MUTE, wxT("M"),
                                     wxDefaultPosition, wxSize(10,-1));
   mute_button->SetLabelMarkup("<b>M</b>");
   mute_button->SetForegroundColour(wxColour(244,80,66,255));
+  hbox->Add(mute_button, 1, wxEXPAND);
   bool mute = configuration_get_int("mute", false);
   mute_button->SetValue(mute);
   get_player()->set_mute(mute);
-  hbox->Add(mute_button, 1, wxEXPAND);
 
   open_button = new wxButton(this, PLAYER_BUTTON_OPEN, wxT("O"),
                                     wxDefaultPosition, wxSize(10,-1));
+  hbox->Add(open_button, 1, wxEXPAND);
   auto path = configuration_get_string("path", "");
   if(!path.empty()) {
     open_file_in_player(path);
   }
-  hbox->Add(open_button, 1, wxEXPAND);
 
 
   timer = new wxTimer(this, PLAYER_TIMER);
