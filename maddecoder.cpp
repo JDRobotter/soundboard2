@@ -115,7 +115,8 @@ float MADDecoder::mad_sample_to_float(mad_fixed_t sample) {
 }
 
 // member functions
-MADDecoder::MADDecoder() {
+MADDecoder::MADDecoder():
+  buffer() {
   quit = false;
   eof = false;
 }

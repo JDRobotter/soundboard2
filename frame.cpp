@@ -44,10 +44,21 @@ SoundboardFrame::SoundboardFrame(const wxString& title, const wxPoint& pos, cons
     std::string& name = device.second;
     
     menu_device->AppendRadioItem(idx,wxString(name));
-    Bind(wxEVT_COMMAND_MENU_SELECTED, &SoundboardFrame::on_menu, this, idx);
+    Bind(wxEVT_COMMAND_MENU_SELECTED, &SoundboardFrame::on_device_menu, this, idx);
   }
-
   menu->AppendSubMenu(menu_device, "&Output device", "Select output device");
+
+  // build output mode menu
+  menu_mode = new wxMenu();
+
+  for(auto mode : mixer->get_modes()) {
+    auto idx = mode.first;
+    std::string& name = mode.second;
+
+    menu_mode->AppendRadioItem(idx, wxString(name));
+    Bind(wxEVT_COMMAND_MENU_SELECTED, &SoundboardFrame::on_mode_menu, this, idx);
+  }
+  menu->AppendSubMenu(menu_mode, "&Output mode", "Select output mode");
 
   menu->AppendSeparator();
   menu->Append(wxID_EXIT);
@@ -127,7 +138,7 @@ void SoundboardFrame::on_button_new_row(wxCommandEvent& event) {
   set_sizer_and_fit();
 }
 
-void SoundboardFrame::on_menu(wxCommandEvent& event) {
+void SoundboardFrame::on_device_menu(wxCommandEvent& event) {
   // get selected device index
   PaDeviceIndex idx  = event.GetId();
   set_mixer_device(idx);
@@ -138,6 +149,19 @@ void SoundboardFrame::set_mixer_device(PaDeviceIndex idx) {
   mixer->set_device(idx);
   // set menu items checks
   menu_device->Check(idx,true);
+}
+
+void SoundboardFrame::on_mode_menu(wxCommandEvent& event) {
+  // get selected mode idx
+  AudioMixerMode idx = (AudioMixerMode)event.GetId();
+  set_mixer_mode(idx);
+  panel->configuration_set_int("mode",idx);
+}
+
+void SoundboardFrame::set_mixer_mode(AudioMixerMode idx) {
+  mixer->set_mode(idx);
+  // set menu items checks
+  menu_mode->Check(idx,true);
 }
 
 std::shared_ptr<AudioMixer> SoundboardFrame::get_mixer() {

@@ -6,7 +6,8 @@
 
 
 AudioPlayer::AudioPlayer(AudioMixer *mixer)
-  :mixer(mixer) {
+  :mixer(mixer),
+  stream(NULL) {
   gain = 1.0;
   level = 0.0;
   repeat = false;
@@ -211,8 +212,27 @@ int AudioPlayer::portaudio_feed_callback(
     if(fr > rmax)
       rmax = fr;
 
-    *(out++) = l;
-    *(out++) = r;
+    switch(player->get_mixer_mode()) {
+
+      case MIXER_MODE_FULL_RIGHT: {
+        *(out++) = 0;
+        *(out++) = (l + r)/2;
+        break;
+      }
+
+      case MIXER_MODE_FULL_LEFT: {
+        *(out++) = (l + r)/2;
+        *(out++) = 0;
+        break;
+      }
+
+      case MIXER_MODE_STEREO:
+      default: {
+        *(out++) = l;
+        *(out++) = r;
+        break;
+      }
+    }
   }
 
   // update mean signal level
@@ -223,6 +243,13 @@ int AudioPlayer::portaudio_feed_callback(
 
 bool AudioPlayer::is_stream_valid(void) {
   return !filename.empty();
+}
+
+AudioMixerMode AudioPlayer::get_mixer_mode(void) {
+  if(mixer)
+    return mixer->get_mode();
+  else
+    return MIXER_MODE_STEREO;
 }
 
 void AudioPlayer::set_level(float v) {
@@ -279,6 +306,18 @@ AudioMixer::~AudioMixer() {
 
 std::vector<std::pair<PaDeviceIndex,std::string>> AudioMixer::get_devices() {
   return devices;
+}
+
+void AudioMixer::set_mode(AudioMixerMode mode) {
+  current_mode = mode;
+}
+
+std::vector<AudioMixerModePair> AudioMixer::get_modes(void) {
+  return MIXER_MODES;
+}
+
+AudioMixerMode AudioMixer::get_mode(void) {
+  return current_mode;
 }
 
 AudioPlayerID AudioMixer::new_player() {

@@ -11,6 +11,12 @@
 
 class AudioMixer;
 
+enum AudioMixerMode {
+  MIXER_MODE_STEREO = 1,
+  MIXER_MODE_FULL_RIGHT,
+  MIXER_MODE_FULL_LEFT,
+};
+
 class AudioPlayer {
   public:
     AudioPlayer(AudioMixer *mixer);
@@ -55,6 +61,9 @@ class AudioPlayer {
     // return true if stream as been created, false otherwise
     bool is_stream_valid(void);
 
+    // return current audio mixer mode
+    AudioMixerMode get_mixer_mode(void);
+
 		PaStream *stream;
 		
 		std::unique_ptr<Decoder> decoder;
@@ -68,6 +77,14 @@ class AudioPlayer {
     std::atomic<bool> mute;
 
 		std::atomic<float> level;
+};
+
+
+using AudioMixerModePair = std::pair<AudioMixerMode,std::string>;
+const std::vector<AudioMixerModePair> MIXER_MODES {
+  {MIXER_MODE_STEREO, "stereo"},
+  {MIXER_MODE_FULL_RIGHT, "all to right"},
+  {MIXER_MODE_FULL_LEFT, "all to left"},
 };
 
 using AudioPlayerID = int;
@@ -96,11 +113,16 @@ class AudioMixer {
 
     PaDeviceIndex get_device(void);
 
+    void set_mode(AudioMixerMode);
+    std::vector<AudioMixerModePair> get_modes(void);
+    AudioMixerMode get_mode(void);
+
   private:
 
     // currently selected device
     std::atomic<PaDeviceIndex> current_device;
-
+    // currently selected mode
+    std::atomic<AudioMixerMode> current_mode;
     // map of audio players
     AudioPlayerMap players;
 

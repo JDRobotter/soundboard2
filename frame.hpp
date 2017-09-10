@@ -138,14 +138,19 @@ class SoundboardFrame: public wxFrame {
 
     wxMenu *menu;
     wxMenu *menu_device;
+    wxMenu *menu_mode;
 
     wxGridBagSizer *ugs;
 
-    void on_menu(wxCommandEvent& event);
+    void on_device_menu(wxCommandEvent& event);
+
+    void on_mode_menu(wxCommandEvent& event);
 
     void on_size(wxSizeEvent& event);
 
     void set_mixer_device(PaDeviceIndex);
+
+    void set_mixer_mode(AudioMixerMode);
 
     void on_button_new_column(wxCommandEvent& event);
     void on_button_remove_column(wxCommandEvent& event);
