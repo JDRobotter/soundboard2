@@ -206,7 +206,7 @@ bool SoundboardMainPanel::load_configuration_from_file(std::string app_name) {
   return true;
 }
 
-void SoundboardMainPanel::configuration_set_int(std::string key, int v) {
+void SoundboardMainPanel::configuration_set_int(const std::string &key, int v) {
   if(!config)
     return;
 
@@ -214,7 +214,7 @@ void SoundboardMainPanel::configuration_set_int(std::string key, int v) {
   config->Flush();
 }
   
-int SoundboardMainPanel::configuration_get_int(std::string key, int vdefault ) {
+int SoundboardMainPanel::configuration_get_int(const std::string &key, int vdefault ) {
   if(!config)
     return vdefault;
 
@@ -225,7 +225,7 @@ int SoundboardMainPanel::configuration_get_int(std::string key, int vdefault ) {
     return vdefault;
 }
 
-void SoundboardMainPanel::configuration_set_float(std::string key, float v) {
+void SoundboardMainPanel::configuration_set_float(const std::string &key, float v) {
   if(!config)
     return;
 
@@ -233,7 +233,7 @@ void SoundboardMainPanel::configuration_set_float(std::string key, float v) {
   config->Flush();
 }
 
-float SoundboardMainPanel::configuration_get_float(std::string key, float vdefault) {
+float SoundboardMainPanel::configuration_get_float(const std::string &key, float vdefault) {
   if(!config)
     return vdefault;
 
@@ -244,7 +244,7 @@ float SoundboardMainPanel::configuration_get_float(std::string key, float vdefau
     return vdefault;
 }
 
-void SoundboardMainPanel::configuration_set_string(std::string key, std::string v) {
+void SoundboardMainPanel::configuration_set_string(const std::string &key, std::string v) {
   if(!config)
     return;
 
@@ -252,7 +252,7 @@ void SoundboardMainPanel::configuration_set_string(std::string key, std::string 
   config->Flush();
 }
 
-std::string SoundboardMainPanel::configuration_get_string(std::string key, std::string vdefault) {
+std::string SoundboardMainPanel::configuration_get_string(const std::string &key, std::string vdefault) {
   if(!config)
     return vdefault;
 
@@ -503,31 +503,31 @@ void SoundboardPlayerPanel::on_slider(wxCommandEvent& event) {
   configuration_set_float("gain",gain);
 }
 
-std::string SoundboardPlayerPanel::configuration_own_keyify(std::string key) {
+std::string SoundboardPlayerPanel::configuration_own_keyify(const std::string &key) {
   return "player#"+std::to_string(xpos) + "#" + std::to_string(ypos) + "#" + key;
 }
 
-void SoundboardPlayerPanel::configuration_set_int(std::string key, int v) {
+void SoundboardPlayerPanel::configuration_set_int(const std::string &key, int v) {
   main_panel->configuration_set_int(configuration_own_keyify(key), v);
 }
   
-int SoundboardPlayerPanel::configuration_get_int(std::string key, int vdefault ) {
+int SoundboardPlayerPanel::configuration_get_int(const std::string &key, int vdefault ) {
   return main_panel->configuration_get_int(configuration_own_keyify(key), vdefault);
 }
 
-void SoundboardPlayerPanel::configuration_set_float(std::string key, float v) {
+void SoundboardPlayerPanel::configuration_set_float(const std::string &key, float v) {
   main_panel->configuration_set_float(configuration_own_keyify(key), v);
 }
 
-float SoundboardPlayerPanel::configuration_get_float(std::string key, float vdefault) {
+float SoundboardPlayerPanel::configuration_get_float(const std::string &key, float vdefault) {
   return main_panel->configuration_get_float(configuration_own_keyify(key), vdefault);
 }
 
-void SoundboardPlayerPanel::configuration_set_string(std::string key, std::string v) {
+void SoundboardPlayerPanel::configuration_set_string(const std::string &key, std::string v) {
   main_panel->configuration_set_string(configuration_own_keyify(key), v);
 }
 
-std::string SoundboardPlayerPanel::configuration_get_string(std::string key, std::string vdefault) {
+std::string SoundboardPlayerPanel::configuration_get_string(const std::string &key, std::string vdefault) {
   return main_panel->configuration_get_string(configuration_own_keyify(key), vdefault);
 }
 

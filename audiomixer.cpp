@@ -7,11 +7,11 @@
 
 AudioPlayer::AudioPlayer(AudioMixer *mixer)
   :mixer(mixer),
-  stream(NULL) {
-  gain = 1.0;
-  level = 0.0;
-  repeat = false;
-  mute = false;
+  stream(NULL),
+  gain(1.0),
+  repeat(false),
+  mute(false),
+  level(0.0) {
 }
 
 AudioPlayer::~AudioPlayer() {
@@ -180,7 +180,7 @@ int AudioPlayer::portaudio_feed_callback(
   (void)time_info;
   (void)input_buffer;
 
-  AudioPlayer *player = (AudioPlayer*)data;
+  AudioPlayer *player = static_cast<AudioPlayer*>(data);
 
 
   // get frame from decoder (will potentially block)
@@ -343,7 +343,7 @@ std::string AudioMixer::get_device_name(PaDeviceIndex idx) {
   return std::string();
 }
 
-PaDeviceIndex AudioMixer::get_device_by_name(std::string name) {
+PaDeviceIndex AudioMixer::get_device_by_name(const std::string &name) {
   for(auto const& device: devices) {
     if(device.second == name) {
       return device.first;

@@ -19,7 +19,7 @@ enum AudioMixerMode {
 
 class AudioPlayer {
   public:
-    AudioPlayer(AudioMixer *mixer);
+    explicit AudioPlayer(AudioMixer *mixer);
     ~AudioPlayer();
 
     bool open(std::string filename);
@@ -106,7 +106,7 @@ class AudioMixer {
 
     std::string get_device_name(PaDeviceIndex idx);
 
-    PaDeviceIndex get_device_by_name(std::string name);
+    PaDeviceIndex get_device_by_name(const std::string &name);
 
     void set_device(PaDeviceIndex idx);
     PaDeviceIndex get_default_device(void);

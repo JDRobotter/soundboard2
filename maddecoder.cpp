@@ -8,7 +8,7 @@
 enum mad_flow MADDecoder::output_mad_callback(void *data,
   struct mad_header const *header, struct mad_pcm *pcm) {
   // access object
-  MADDecoder *mad = (MADDecoder*)data;
+  MADDecoder *mad = static_cast<MADDecoder*>(data);
   {
     std::unique_lock<std::mutex> mlock(mad->parameters_mutex);
     auto& p = mad->get_parameters();
@@ -60,7 +60,7 @@ enum mad_flow MADDecoder::header_mad_callback(void *data, struct mad_header cons
 
 enum mad_flow MADDecoder::input_mad_callback(void *data, struct mad_stream *stream) {
   // access object
-  MADDecoder *mad = (MADDecoder*)data;
+  MADDecoder *mad = static_cast<MADDecoder*>(data);
   auto& ifile = mad->ifile;
 
   size_t offset = sizeof(mad->buffer);
@@ -115,10 +115,11 @@ float MADDecoder::mad_sample_to_float(mad_fixed_t sample) {
 
 // member functions
 MADDecoder::MADDecoder():
+  buffer(),
   ifile(),
-  filename("") {
-  quit = false;
-  eof = false;
+  filename(""),
+  quit(false),
+  eof(false) {
 }
 
 MADDecoder::~MADDecoder() {
