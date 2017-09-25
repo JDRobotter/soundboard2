@@ -51,7 +51,6 @@ enum mad_flow MADDecoder::output_mad_callback(void *data,
 enum mad_flow MADDecoder::error_mad_callback(void *data,
   struct mad_stream *stream, struct mad_frame *frame) {
 
-  //std::cerr<<"ERROR "<<stream->error<<" "<<mad_stream_errorstr(stream)<<"\n";
   return MAD_FLOW_CONTINUE;
 }
 
