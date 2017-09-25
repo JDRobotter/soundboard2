@@ -1,7 +1,7 @@
-CC=g++ -Wall -std=c++1y -O0 -g
+CC=g++ -Wall -std=c++1y -O3 -g
 CXXFLAGS= $(shell wx-config --cxxflags)
 
-LD=g++ -Wall -std=c++1y -O0 -g
+LD=g++ -Wall -std=c++1y -O3 -g
 LDFLAGS= $(shell wx-config --libs) -lportaudio -lm -lmad -pthread -lsndfile
 
 SOURCES= $(wildcard *.cpp)

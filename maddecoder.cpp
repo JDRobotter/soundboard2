@@ -222,7 +222,6 @@ std::vector<audio_frame_t> MADDecoder::pop_frames(unsigned int n) {
           poped = false;
         }
         // not enough frames in queue, sleep on it
-		std::cerr << "sleeping for frames !\n";
         frames_available_cv.wait(mlock);
       }
 
