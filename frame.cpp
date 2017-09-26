@@ -103,6 +103,10 @@ SoundboardFrame::SoundboardFrame(const wxString& title, const wxPoint& pos, cons
   }
   set_mixer_device(idx);
 
+  // load mode
+  AudioMixerMode mode = (AudioMixerMode)panel->configuration_get_int("mode",MIXER_MODE_STEREO);
+  set_mixer_mode(mode);
+
 }
 void SoundboardFrame::set_sizer_and_fit() {
   SetMinSize(wxDefaultSize);
